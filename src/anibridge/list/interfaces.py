@@ -1,0 +1,406 @@
+"""List provider interfaces."""
+
+from collections.abc import Sequence
+from dataclasses import dataclass
+from datetime import datetime
+from enum import StrEnum
+from functools import total_ordering
+from typing import ClassVar, Protocol, Self, TypeVar, runtime_checkable
+
+__all__ = [
+    "ListEntity",
+    "ListEntry",
+    "ListMedia",
+    "ListMediaType",
+    "ListProvider",
+    "ListProviderT",
+    "ListStatus",
+]
+
+
+ListProviderT = TypeVar("ListProviderT", bound="ListProvider", covariant=True)
+
+
+class ListMediaType(StrEnum):
+    """Supported media types in a list."""
+
+    TV = "TV"
+    MOVIE = "MOVIE"
+
+
+@total_ordering
+class ListStatus(StrEnum):
+    """Supported statuses for media items in a list."""
+
+    COMPLETED = "completed"
+    CURRENT = "current"
+    DROPPED = "dropped"
+    PAUSED = "paused"
+    PLANNING = "planning"
+    REPEATING = "repeating"
+
+    __PRIORITY: ClassVar[dict[str, int]] = {
+        "completed": 3,
+        "repeating": 3,
+        "current": 2,
+        "paused": 2,
+        "dropped": 2,
+        "planning": 1,
+    }
+
+    @property
+    def priority(self) -> int:
+        """Get the priority of the ListStatus for comparison purposes."""
+        return self.__PRIORITY[self.value]
+
+    def __lt__(self, other: object) -> bool:
+        """Compare two ListStatus instances based on their priority."""
+        if not isinstance(other, ListStatus):
+            return NotImplemented
+        return self.priority < other.priority
+
+    def __eq__(self, other: object) -> bool:
+        """Check equality of two ListStatus instances based on their priority."""
+        if not isinstance(other, ListStatus):
+            return NotImplemented
+        return self.priority == other.priority
+
+
+@dataclass(frozen=True, slots=True)
+class ListUser:
+    """User information for a media list."""
+
+    key: str
+    title: str
+
+    def __hash__(self) -> int:
+        """Compute the hash based on the user's key."""
+        return hash(self.key)
+
+
+@runtime_checkable
+class ListEntity(Protocol[ListProviderT]):
+    """Base protocol for list entities."""
+
+    key: str
+    title: str
+
+    def provider(self) -> ListProviderT:
+        """Get the list provider this entity belongs to.
+
+        Returns:
+            ListProvider: The list provider.
+        """
+        ...
+
+    def __hash__(self) -> int:
+        """Compute the hash based on the entity's key."""
+        return hash(f"{self.provider().NAMESPACE}:{self.__class__.__name__}:{self.key}")
+
+    def __repr__(self) -> str:
+        """Return a string representation of the list entity."""
+        return (
+            f"<{self.__class__.__name__}:{self.provider().NAMESPACE}:{self.key}:"
+            f"{self.title[:32]}>"
+        )
+
+
+@runtime_checkable
+class ListMedia(ListEntity[ListProviderT], Protocol[ListProviderT]):
+    """Protocol for media items in a list."""
+
+    @property
+    def media_type(self) -> ListMediaType:
+        """Get the type of media (e.g., TV, MOVIE)."""
+        ...
+
+    @property
+    def poster_image(self) -> str | None:
+        """Return a provider-supplied poster or cover image URL if available."""
+        ...
+
+    @property
+    def total_units(self) -> int | None:
+        """Return the total number of units (e.g. episodes) for the media."""
+        ...
+
+
+@runtime_checkable
+class ListEntry(ListEntity[ListProviderT], Protocol[ListProviderT]):
+    """Base protocol for list entries."""
+
+    @property
+    def progress(self) -> int | None:
+        """Get the progress for the entry.
+
+        Returns:
+            int: The progress integer (e.g., episodes watched).
+        """
+        ...
+
+    @progress.setter
+    def progress(self, value: int | None) -> None:
+        """Update the recorded progress for the entry."""
+        ...
+
+    @property
+    def repeats(self) -> int | None:
+        """Get the repeat count for the entry.
+
+        If not available by the list provider, return 0.
+
+        Returns:
+            int: The number of times repeated.
+        """
+        ...
+
+    @repeats.setter
+    def repeats(self, value: int | None) -> None:
+        """Update the repeat count for the entry."""
+        ...
+
+    @property
+    def review(self) -> str | None:
+        """Get the user's review for the entry.
+
+        Returns:
+            str | None: The user's review text, or None if not reviewed.
+        """
+        ...
+
+    @review.setter
+    def review(self, value: str | None) -> None:
+        """Update the review for the entry."""
+        ...
+
+    @property
+    def status(self) -> ListStatus | None:
+        """Get the status of the entry in the list.
+
+        Returns:
+            ListStatus | None: The watch status.
+        """
+        ...
+
+    @status.setter
+    def status(self, value: ListStatus | None) -> None:
+        """Update the status for the entry."""
+        ...
+
+    @property
+    def user_rating(self) -> int | None:
+        """Get the user rating for the list entry.
+
+        Returns:
+            int | None: The user rating on a 0-100 scale, or None if not rated.
+        """
+        ...
+
+    @user_rating.setter
+    def user_rating(self, value: int | None) -> None:
+        """Update the user rating for the entry."""
+        ...
+
+    @property
+    def started_at(self) -> datetime | None:
+        """Get the timestamp when the user started watching the entry.
+
+        Returns:
+            datetime | None: Timestamp when started, or None if not started.
+        """
+        ...
+
+    @started_at.setter
+    def started_at(self, value: datetime | None) -> None:
+        """Update the timestamp when the user started the entry."""
+        ...
+
+    @property
+    def finished_at(self) -> datetime | None:
+        """Get the timestamp when the user finished watching the entry.
+
+        This is the timestamp when the entry was completed for the *first* time.
+
+        Returns:
+            datetime | None: Timestamp when finished, or None if not finished.
+        """
+        ...
+
+    @finished_at.setter
+    def finished_at(self, value: datetime | None) -> None:
+        """Update the timestamp when the user finished the entry."""
+        ...
+
+    @property
+    def total_units(self) -> int | None:
+        """Return the total number of units (episodes/chapters) for the media."""
+        ...
+
+    def media(self) -> ListMedia[ListProviderT]:
+        """Get the media item associated with the list entry.
+
+        Returns:
+            ListMedia: The media item.
+        """
+        ...
+
+
+@runtime_checkable
+class ListProvider(Protocol):
+    """Interface for a provider that exposes a user media list."""
+
+    NAMESPACE: ClassVar[str]
+
+    def __init__(self, *, config: dict | None = None) -> None:
+        """Initialize the provider with optional configuration.
+
+        Args:
+            config (dict | None): Any configuration options that were detected with the
+                provider's namespace as a prefix.
+        """
+
+    async def initialize(self) -> None:
+        """Asynchronous initialization hook.
+
+        Put any async setup logic here (e.g., network requests).
+        """
+        ...
+
+    async def backup_list(self) -> str:
+        """Backup the entire list from the provider.
+
+        It is up to the implementation to decide the format of the backup data. Whatever
+        format, it should be serializable/deserializable in string form.
+
+        This is optional and may not be supported by all providers.
+
+        Returns:
+            str: A serialized string representation of all list entries.
+        """
+        return ""
+
+    async def build_entry(self, key: str) -> ListEntry[Self]:
+        """Construct a list entry for the supplied media key.
+
+        Implementations must return a list entry instance suitable for creating or
+        updating a record, even if the user does not currently have the media in
+        their list. This typically involves fetching provider metadata for the
+        media and wrapping it with the provider's ``ListEntry`` implementation.
+
+        Args:
+            key (str): The unique key of the media item to prepare an entry for.
+
+        Returns:
+            ListEntry: The prepared list entry instance.
+        """
+        ...
+
+    async def clear_cache(self) -> None:
+        """Clear any provider-local caches."""
+        ...
+
+    async def close(self) -> None:
+        """Close the provider and release resources."""
+        ...
+
+    async def delete_entry(self, key: str) -> None:
+        """Delete a list entry by its media key.
+
+        Args:
+            key (str): The unique key of the media item to delete.
+        """
+        ...
+
+    async def get_entry(self, key: str) -> ListEntry[Self] | None:
+        """Retrieve a list entry by its media key.
+
+        Args:
+            key (str): The unique key of the media item to retrieve.
+
+        Returns:
+            ListEntry | None: The list entry if found, otherwise None.
+        """
+        ...
+
+    async def get_entries_batch(
+        self, keys: Sequence[str]
+    ) -> Sequence[ListEntry[Self] | None]:
+        """Retrieve multiple list entries by their media keys.
+
+        The order of the returned sequence must match the order of the input keys.
+
+        Args:
+            keys (Sequence[str]): The unique keys of the media items to retrieve.
+
+        Returns:
+            Sequence[ListEntry | None]: A sequence of list entries, with None for any
+                not found.
+        """
+        entries: list[ListEntry[Self] | None] = []
+        for key in keys:
+            entry = await self.get_entry(key)
+            entries.append(entry)
+        return entries
+
+    async def restore_list(self, backup: str) -> None:
+        """Restore the list from a serialized backup string.
+
+        This is optional and may not be supported by all providers.
+
+        Args:
+            backup (str): The serialized string representation of the list entries.
+        """
+        return None
+
+    async def search(self, query: str) -> Sequence[ListEntry[Self]]:
+        """Search the provider for entries matching the query.
+
+        Args:
+            query (str): The search query string.
+
+        Returns:
+            Sequence[ListEntry]: A sequence of matching list entries.
+        """
+        ...
+
+    async def update_entry(
+        self, key: str, entry: ListEntry[Self]
+    ) -> ListEntry[Self] | None:
+        """Update a list entry with new information.
+
+        Args:
+            key (str): The unique key of the media item to update.
+            entry (ListEntry): The updated entry information.
+
+        Returns:
+            ListEntry | None: The updated list entry, or None if the update failed.
+        """
+        ...
+
+    async def update_entries_batch(
+        self, entries: Sequence[ListEntry[Self]]
+    ) -> Sequence[ListEntry[Self] | None]:
+        """Update multiple list entries in a single operation.
+
+        This is optional and may not be supported by all providers.
+
+        Args:
+            entries (Sequence[ListEntry]): The list entries to update.
+
+        Returns:
+            Sequence[ListEntry | None]: A sequence of updated list entries, with None
+                for any that could not be updated.
+        """
+        updated_entries: list[ListEntry[Self] | None] = []
+        for entry in entries:
+            updated_entry = await self.update_entry(entry.media().key, entry)
+            updated_entries.append(updated_entry)
+        return updated_entries
+
+    def user(self) -> ListUser | None:
+        """Return the associated user object, if any.
+
+        Returns:
+            User | None: The associated user object, if any.
+        """
+        ...
