@@ -1,9 +1,11 @@
 """Registration utilities for `ListProvider` implementations."""
 
 from collections.abc import Callable, Iterator
-from typing import overload
+from typing import TypeVar, overload
 
 from anibridge.list.interfaces import ListProvider
+
+LP = TypeVar("LP", bound=ListProvider)
 
 
 class ListProviderRegistry:
@@ -58,10 +60,10 @@ class ListProviderRegistry:
     @overload
     def register(
         self,
-        provider_cls: type[ListProvider],
+        provider_cls: type[LP],
         *,
         namespace: str | None = None,
-    ) -> type[ListProvider]: ...
+    ) -> type[LP]: ...
 
     @overload
     def register(
@@ -69,35 +71,28 @@ class ListProviderRegistry:
         provider_cls: None = None,
         *,
         namespace: str | None = None,
-    ) -> Callable[[type[ListProvider]], type[ListProvider]]: ...
+    ) -> Callable[[type[LP]], type[LP]]: ...
 
     def register(
         self,
-        provider_cls: type[ListProvider] | None = None,
+        provider_cls: type[LP] | None = None,
         *,
         namespace: str | None = None,
-    ) -> (
-        type[ListProvider]
-        | Callable[
-            [type[ListProvider]],
-            type[ListProvider],
-        ]
-    ):
+    ) -> type[LP] | Callable[[type[LP]], type[LP]]:
         """Register a provider class, optionally used as a decorator.
 
         Args:
-            provider_cls (type[ListProvider] | None): The provider class to register.
-                If `None`, the method acts as a decorator factory.
+            provider_cls (type[LP] | None): The provider class to register. If `None`,
+                the method acts as a decorator factory.
             namespace (str | None): Explicit namespace override. Defaults to the class'
                 `NAMESPACE` attribute.
 
         Returns:
-            type[ListProvider] | Callable[[type[ListProvider]],
-                type[ListProvider]]: The registered provider class, or a decorator
-                that registers the class.
+            type[LP] | Callable[[type[LP]], type[LP]]: The registered provider class, or
+                a decorator that registers the class.
         """
 
-        def decorator(cls: type[ListProvider]) -> type[ListProvider]:
+        def decorator(cls: type[LP]) -> type[LP]:
             """Register `cls` as a provider."""
             resolved_namespace = namespace or getattr(cls, "NAMESPACE", None)
             if not isinstance(resolved_namespace, str) or not resolved_namespace:
@@ -140,18 +135,30 @@ class ListProviderRegistry:
 provider_registry = ListProviderRegistry()
 
 
-def list_provider(
-    cls: type[ListProvider] | None = None,
+@overload
+def list_provider[LP: ListProvider](
+    cls: type[LP],
     *,
     namespace: str | None = None,
     registry: ListProviderRegistry | None = None,
-) -> (
-    type[ListProvider]
-    | Callable[
-        [type[ListProvider]],
-        type[ListProvider],
-    ]
-):
+) -> type[LP]: ...
+
+
+@overload
+def list_provider(
+    cls: None = None,
+    *,
+    namespace: str | None = None,
+    registry: ListProviderRegistry | None = None,
+) -> Callable[[type[LP]], type[LP]]: ...
+
+
+def list_provider[LP: ListProvider](
+    cls: type[LP] | None = None,
+    *,
+    namespace: str | None = None,
+    registry: ListProviderRegistry | None = None,
+) -> type[LP] | Callable[[type[LP]], type[LP]]:
     """Class decorator that registers `ListProvider` implementations.
 
     This helper lets third-party providers register themselves declaratively:
@@ -167,17 +174,16 @@ def list_provider(
         ```
 
     Args:
-        cls (type[ListProvider]): Optional provider class when used directly instead
-            of as a decorator.
-        namespace (str): Explicit namespace override. Defaults to the class'
-            `NAMESPACE`.
-        registry (ListProviderRegistry): Alternate registry to insert into. Defaults
-            to the module-level one.
+        cls (type[LP] | None): The provider class to register. If `None`, the function
+            acts as a decorator factory.
+        namespace (str | None): Explicit namespace override. Defaults to the class'
+            `NAMESPACE` attribute.
+        registry (ListProviderRegistry | None): Alternate registry to insert into.
+            Defaults to the module-level one.
 
     Returns:
-        type[ListProvider] | Callable[[type[ListProvider]],
-            type[ListProvider]]: The registered provider class, or a decorator that
-            registers the class.
+        type[LP] | Callable[[type[LP]], type[LP]]: The registered provider class, or
+            a decorator that registers the class.
     """
     active_registry = registry or provider_registry
     return active_registry.register(cls, namespace=namespace)
