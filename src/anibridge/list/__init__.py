@@ -8,12 +8,20 @@ from anibridge.list.interfaces import (
     ListStatus,
     ListUser,
 )
+from anibridge.list.registry import (
+    ListProviderRegistry,
+    list_provider,
+    provider_registry,
+)
 
 __all__ = [
     "ListEntry",
     "ListMedia",
     "ListMediaType",
     "ListProvider",
+    "ListProviderRegistry",
     "ListStatus",
     "ListUser",
+    "list_provider",
+    "provider_registry",
 ]
