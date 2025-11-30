@@ -15,6 +15,7 @@ __all__ = [
     "ListProvider",
     "ListProviderT",
     "ListStatus",
+    "MediaMap",
 ]
 
 
@@ -64,6 +65,21 @@ class ListStatus(StrEnum):
         if not isinstance(other, ListStatus):
             return NotImplemented
         return self.priority == other.priority
+
+
+@dataclass(frozen=True, slots=True)
+class MediaMap:
+    """Mapping information for media items across providers."""
+
+    anilist_id: int
+    anidb_id: int | None = None
+    imdb_id: list[str] | None = None
+    mal_id: list[int] | None = None
+    tmdb_movie_id: list[int] | None = None
+    tmdb_show_id: int | None = None
+    tvdb_id: int | None = None
+    tmdb_mappings: dict[str, str] | None = None
+    tvdb_mappings: dict[str, str] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -345,6 +361,16 @@ class ListProvider(Protocol):
             entry = await self.get_entry(key)
             entries.append(entry)
         return entries
+
+    def resolve_map(self, media_map: MediaMap) -> str | None:
+        """Resolve a MediaMap to a provider-specific media key.
+
+        Args:
+            media_map (MediaMap): The media mapping information.
+
+        Returns:
+            str | None: The resolved media key, or None if not found.
+        """
 
     async def restore_list(self, backup: str) -> None:
         """Restore the list from a serialized backup string.
