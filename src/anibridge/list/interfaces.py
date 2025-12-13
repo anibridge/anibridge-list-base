@@ -15,11 +15,52 @@ __all__ = [
     "ListProvider",
     "ListProviderT",
     "ListStatus",
-    "MediaMap",
 ]
 
 
 ListProviderT = TypeVar("ListProviderT", bound="ListProvider", covariant=True)
+
+
+class _MappingDescriptor(Protocol):
+    """Protocol for a mapping descriptor used in resolving media keys."""
+
+    provider: str
+    entry_id: str
+    scope: str
+
+    def key(self) -> str:
+        """Get the unique key for this mapping descriptor.
+
+        Returns:
+            str: The unique key.
+        """
+        ...
+
+
+class _MappingEdge(Protocol):
+    """Protocol for a mapping edge used in resolving media keys."""
+
+    source: _MappingDescriptor
+    destination: _MappingDescriptor
+    source_range: str
+    destination_range: str | None
+
+
+class _MappingGraph(Protocol):
+    """Protocol for a mapping graph used in resolving media keys."""
+
+    edges: tuple[_MappingEdge, ...]
+
+    def descriptors(self, provider: str) -> Sequence[tuple[str, dict[str, str]]]:
+        """Get mapping descriptors for a given provider.
+
+        Args:
+            provider (str): The provider name.
+
+        Returns:
+            Sequence[tuple[str, dict[str, str]]]: A sequence of descriptor tuples.
+        """
+        ...
 
 
 class ListMediaType(StrEnum):
@@ -65,21 +106,6 @@ class ListStatus(StrEnum):
         if not isinstance(other, ListStatus):
             return NotImplemented
         return self.priority == other.priority
-
-
-@dataclass(frozen=True, slots=True)
-class MediaMap:
-    """Mapping information for media items across providers."""
-
-    anilist_id: int
-    anidb_id: int | None = None
-    imdb_id: list[str] | None = None
-    mal_id: list[int] | None = None
-    tmdb_movie_id: list[int] | None = None
-    tmdb_show_id: int | None = None
-    tvdb_id: int | None = None
-    tmdb_mappings: dict[str, str] | None = None
-    tvdb_mappings: dict[str, str] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -305,7 +331,7 @@ class ListProvider(Protocol):
         Implementations must return a list entry instance suitable for creating or
         updating a record, even if the user does not currently have the media in
         their list. This typically involves fetching provider metadata for the
-        media and wrapping it with the provider's ``ListEntry`` implementation.
+        media and wrapping it with the provider's `ListEntry` implementation.
 
         Args:
             key (str): The unique key of the media item to prepare an entry for.
@@ -362,15 +388,28 @@ class ListProvider(Protocol):
             entries.append(entry)
         return entries
 
-    def resolve_map(self, media_map: MediaMap) -> str | None:
-        """Resolve a MediaMap to a provider-specific media key.
+    def resolve_mappings(
+        self,
+        mapping: _MappingGraph,
+        *,
+        scope: str | None = None,
+    ) -> str | None:
+        """Select a list media key from the supplied mapping graph.
+
+        Implementations must choose some mapping descriptor from the graph that
+        they can resolve to a media key.
+
+        If a scope is provided, implementations should prefer descriptors
+        matching that scope.
 
         Args:
-            media_map (MediaMap): The media mapping information.
+            mapping (_MappingGraph): Available mapping edges and descriptors.
+            scope (str | None): Optional scope hint (e.g., "movie", "s1").
 
         Returns:
-            str | None: The resolved media key, or None if not found.
+            str | None: The chosen list media key, or None if unresolved.
         """
+        ...
 
     async def restore_list(self, backup: str) -> None:
         """Restore the list from a serialized backup string.
