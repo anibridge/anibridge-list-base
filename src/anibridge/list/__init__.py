@@ -7,6 +7,9 @@ from anibridge.list.interfaces import (
     ListProvider,
     ListStatus,
     ListUser,
+    MappingDescriptor,
+    MappingEdge,
+    MappingGraph,
 )
 from anibridge.list.registry import (
     ListProviderRegistry,
@@ -22,6 +25,9 @@ __all__ = [
     "ListProviderRegistry",
     "ListStatus",
     "ListUser",
+    "MappingDescriptor",
+    "MappingEdge",
+    "MappingGraph",
     "list_provider",
     "provider_registry",
 ]

@@ -21,7 +21,7 @@ __all__ = [
 ListProviderT = TypeVar("ListProviderT", bound="ListProvider", covariant=True)
 
 
-class _MappingDescriptor(Protocol):
+class MappingDescriptor(Protocol):
     """Protocol for a mapping descriptor used in resolving media keys."""
 
     provider: str
@@ -37,19 +37,19 @@ class _MappingDescriptor(Protocol):
         ...
 
 
-class _MappingEdge(Protocol):
+class MappingEdge(Protocol):
     """Protocol for a mapping edge used in resolving media keys."""
 
-    source: _MappingDescriptor
-    destination: _MappingDescriptor
+    source: MappingDescriptor
+    destination: MappingDescriptor
     source_range: str
     destination_range: str | None
 
 
-class _MappingGraph(Protocol):
+class MappingGraph(Protocol):
     """Protocol for a mapping graph used in resolving media keys."""
 
-    edges: tuple[_MappingEdge, ...]
+    edges: tuple[MappingEdge, ...]
 
     def descriptors(self, provider: str) -> Sequence[tuple[str, dict[str, str]]]:
         """Get mapping descriptors for a given provider.
@@ -390,7 +390,7 @@ class ListProvider(Protocol):
 
     def resolve_mappings(
         self,
-        mapping: _MappingGraph,
+        mapping: MappingGraph,
         *,
         scope: str | None = None,
     ) -> str | None:
