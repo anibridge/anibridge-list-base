@@ -51,14 +51,11 @@ class MappingGraph(Protocol):
 
     edges: tuple[MappingEdge, ...]
 
-    def descriptors(self, provider: str) -> Sequence[tuple[str, dict[str, str]]]:
-        """Get mapping descriptors for a given provider.
-
-        Args:
-            provider (str): The provider name.
+    def descriptors(self) -> tuple[MappingDescriptor, ...]:
+        """Get unique descriptors referenced by the edges.
 
         Returns:
-            Sequence[tuple[str, dict[str, str]]]: A sequence of descriptor tuples.
+            Sequence[MappingDescriptor]: The unique mapping descriptors.
         """
         ...
 
