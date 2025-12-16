@@ -92,17 +92,23 @@ class ListStatus(StrEnum):
         """Get the priority of the ListStatus for comparison purposes."""
         return self.__PRIORITY[self.value]
 
+    def __eq__(self, other: object) -> bool:
+        """Check equality with another ListStatus (not based on priority)."""
+        if not isinstance(other, ListStatus):
+            return NotImplemented
+        return self.value == other.value
+
     def __lt__(self, other: object) -> bool:
-        """Compare two ListStatus instances based on their priority."""
+        """Check if this ListStatus has lower priority than another."""
         if not isinstance(other, ListStatus):
             return NotImplemented
         return self.priority < other.priority
 
-    def __eq__(self, other: object) -> bool:
-        """Check equality of two ListStatus instances based on their priority."""
+    def __le__(self, other: object) -> bool:
+        """Check if this ListStatus has lower or equal priority than another."""
         if not isinstance(other, ListStatus):
             return NotImplemented
-        return self.priority == other.priority
+        return self.priority <= other.priority
 
 
 @dataclass(frozen=True, slots=True)
