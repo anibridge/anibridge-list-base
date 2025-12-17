@@ -400,7 +400,7 @@ class ListProvider(Protocol):
         mapping: MappingGraph,
         *,
         scope: str | None = None,
-    ) -> str | None:
+    ) -> MappingDescriptor | None:
         """Select a list media key from the supplied mapping graph.
 
         Implementations must choose some mapping descriptor from the graph that
@@ -414,7 +414,8 @@ class ListProvider(Protocol):
             scope (str | None): Optional scope hint (e.g., "movie", "s1").
 
         Returns:
-            str | None: The chosen list media key, or None if unresolved.
+            MappingDescriptor | None: The resolved mapping descriptor, or None if
+                no suitable descriptor could be found.
         """
         ...
 
