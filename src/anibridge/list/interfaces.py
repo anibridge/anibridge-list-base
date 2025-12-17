@@ -15,6 +15,10 @@ __all__ = [
     "ListProvider",
     "ListProviderT",
     "ListStatus",
+    "ListUser",
+    "MappingDescriptor",
+    "MappingEdge",
+    "MappingGraph",
 ]
 
 

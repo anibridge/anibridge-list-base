@@ -1,10 +1,12 @@
 """Anibridge list provider interfaces package."""
 
 from anibridge.list.interfaces import (
+    ListEntity,
     ListEntry,
     ListMedia,
     ListMediaType,
     ListProvider,
+    ListProviderT,
     ListStatus,
     ListUser,
     MappingDescriptor,
@@ -18,11 +20,13 @@ from anibridge.list.registry import (
 )
 
 __all__ = [
+    "ListEntity",
     "ListEntry",
     "ListMedia",
     "ListMediaType",
     "ListProvider",
     "ListProviderRegistry",
+    "ListProviderT",
     "ListStatus",
     "ListUser",
     "MappingDescriptor",
