@@ -1,6 +1,6 @@
 [project]
 name = "anibridge-list-interface"
-version = "0.1.0"
+version = "0.1.1"
 description = "List provider interfaces for the AniBridge project."
 readme = "README.md"
 requires-python = ">=3.14"
@@ -21,9 +21,6 @@ classifiers = [
 ]
 dependencies = []
 
-[tool.hatch.build]
-packages = ["src/anibridge"]
-
 [tool.ruff]
 indent-width = 4
 line-length = 88
@@ -39,14 +36,13 @@ select = ["B", "D", "DOC", "E", "F", "I", "RUF", "SIM", "UP", "W"]
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
+[tool.uv.build-backend]
+module-name = "anibridge.list"
+namespace = true
+
 [build-system]
-requires = ["hatchling", "hatch-vcs"]
-build-backend = "hatchling.build"
+requires = ["uv_build>=0.9.21,<0.10.0"]
+build-backend = "uv_build"
 
 [dependency-groups]
-dev = [
-    "hatch>=1.15.1",
-    "hatch-vcs>=0.5.0",
-    "ruff>=0.14.4",
-    "ty>=0.0.8",
-]
+dev = ["ruff>=0.14.4", "ty>=0.0.8"]
