@@ -1,26 +1,25 @@
-# anibridge-list-interface
+# anibridge-list-base
 
-anibridge-list-interface provides base classes and utilities to implement and register media list providers for the [AniBridge](https://github.com/anibridge/anibridge) project.
+anibridge-list-base provides base classes and utilities to implement and register media list providers for the [AniBridge](https://github.com/anibridge/anibridge) project.
 
 > [!IMPORTANT]
-> This package is a definition-only interface library. It does not include any concrete provider implementations. Provider implementations should be created in separate packages that depend on this interface library.
+> This package is intended for developers building AniBridge list providers. If you're looking to use AniBridge as an end user, please refer to the [AniBridge documentation](https://anibridge.eliasbenb.dev/).
 
 ## Installation
 
 ```shell
-pip install anibridge-list-interface
-# pip install git+https://github.com/anibridge/anibridge-list-interface.git
+pip install anibridge-list-base
+# pip install git+https://github.com/anibridge/anibridge-list-base.git
 ```
 
 ## API reference
 
-The library exposes concrete base classes in `anibridge.list.interfaces` and registration helpers in `anibridge.list.registry`.
+The library exposes concrete base classes in `anibridge.list.base` and registration helpers in `anibridge.list.registry`.
 
-To get some more context, explore the `anibridge.list.interfaces` module's source code and docstrings.
+To get some more context, explore the `anibridge.list.base` module's source code and docstrings.
 
 - `ListProvider` (base class)
 
-  - The core interface provider implementations must subclass.
   - Key methods and hooks:
     - `async backup_list() -> str`: Optional backup hook returning a string representation of the user's list that can be restored later via `restore_list()`.
     - `async build_entry(key: str) -> ListEntry`: Prepare a `ListEntry` for a media item even if it's not yet in the user's list.
@@ -59,7 +58,7 @@ To get some more context, explore the `anibridge.list.interfaces` module's sourc
 
 ## Examples
 
-You can view the following built-in provider implementations as examples of how to implement the interface:
+You can view the following built-in provider implementations as examples of how to implement the base classes:
 
 - [anibridge-provider-template](https://github.com/anibridge/anibridge-provider-template)
 - [anibridge-anilist-provider](https://github.com/anibridge/anibridge-anilist-provider)

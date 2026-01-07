@@ -1,6 +1,6 @@
-"""Anibridge list provider interfaces package."""
+"""Anibridge list provider base classes package."""
 
-from anibridge.list.interfaces import (
+from anibridge.list.base import (
     ListEntity,
     ListEntry,
     ListMedia,
