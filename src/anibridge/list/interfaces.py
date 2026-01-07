@@ -1,11 +1,12 @@
-"""List provider interfaces."""
+"""List provider base classes and contracts."""
 
+from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
 from functools import total_ordering
-from typing import ClassVar, Protocol, Self, TypeVar, runtime_checkable
+from typing import ClassVar, Protocol, Self, TypeVar, cast
 
 __all__ = [
     "ListEntity",
@@ -117,190 +118,180 @@ class ListStatus(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class ListUser:
-    """User information for a media list."""
+    """User information for a list provider."""
 
     key: str
-    title: str
+    title: str = field(compare=False)
+
+
+@dataclass(slots=True, eq=False)
+class ListEntity[ProviderT: ListProvider](ABC):
+    """Base class for list entities."""
+
+    _provider: ProviderT = field(repr=False, compare=False)
+    _key: str
+    _title: str = field(compare=False)
+
+    @property
+    def key(self) -> str:
+        """Return the unique key for this entity."""
+        return self._key
+
+    def provider(self) -> ProviderT:
+        """Return the provider associated with this entity."""
+        return self._provider
+
+    @property
+    def title(self) -> str:
+        """Return the title of this entity."""
+        return self._title
 
     def __hash__(self) -> int:
-        """Compute the hash based on the user's key."""
-        return hash(self.key)
+        """Compute a hash based on the provider namespace, class name, and key."""
+        return hash((self._provider.NAMESPACE, self.__class__.__name__, self.key))
 
-
-@runtime_checkable
-class ListEntity(Protocol[ListProviderT]):
-    """Base protocol for list entities."""
-
-    key: str
-    title: str
-
-    def provider(self) -> ListProviderT:
-        """Get the list provider this entity belongs to.
-
-        Returns:
-            ListProvider: The list provider.
-        """
-        ...
-
-    def __hash__(self) -> int:
-        """Compute the hash based on the entity's key."""
-        return hash(f"{self.provider().NAMESPACE}:{self.__class__.__name__}:{self.key}")
+    def __eq__(self, other: object) -> bool:
+        """Check equality with another ListEntity based on provider and key."""
+        if other.__class__ is not self.__class__:
+            return NotImplemented
+        other_ent = cast(ListEntity, other)
+        return (
+            self._provider.NAMESPACE == other_ent._provider.NAMESPACE
+            and self.key == other_ent.key
+        )
 
     def __repr__(self) -> str:
-        """Return a string representation of the list entity."""
+        """Return a string representation of the ListEntity."""
         return (
-            f"<{self.__class__.__name__}:{self.provider().NAMESPACE}:{self.key}:"
+            f"<{self.__class__.__name__}:{self._provider.NAMESPACE}:{self.key}:"
             f"{self.title[:32]}>"
         )
 
 
-@runtime_checkable
-class ListMedia(ListEntity[ListProviderT], Protocol[ListProviderT]):
-    """Protocol for media items in a list."""
+class ListMedia[ProviderT: ListProvider](ListEntity[ProviderT], ABC):
+    """Base class for media items in a provider list.
+
+    Subclasses should call the base constructor and may override properties if
+    they need custom behaviour; defaults store values provided at init time.
+    """
 
     @property
+    def external_url(self) -> str | None:
+        """URL to the provider's media item, if available."""
+        return None
+
+    @property
+    def labels(self) -> Sequence[str]:
+        """Display labels such as season or release year."""
+        return ()
+
+    @abstractmethod
+    @property
     def media_type(self) -> ListMediaType:
-        """Get the type of media (e.g., TV, MOVIE)."""
+        """Type of media (e.g., TV, MOVIE)."""
         ...
 
     @property
     def poster_image(self) -> str | None:
-        """Return a provider-supplied poster or cover image URL if available."""
-        ...
+        """Poster or cover image URL, if provided by the provider."""
+        return None
 
+    @abstractmethod
     @property
     def total_units(self) -> int | None:
-        """Return the total number of units (e.g. episodes) for the media."""
+        """Total number of units (episodes/chapters) for the media."""
         ...
 
 
-@runtime_checkable
-class ListEntry(ListEntity[ListProviderT], Protocol[ListProviderT]):
-    """Base protocol for list entries."""
+class ListEntry[ProviderT: ListProvider](ListEntity[ProviderT], ABC):
+    """Base class for list entries for a given media item."""
 
+    @abstractmethod
     @property
     def progress(self) -> int | None:
-        """Get the progress for the entry.
-
-        Returns:
-            int: The progress integer (e.g., episodes watched).
-        """
+        """Progress integer (e.g., episodes watched)."""
         ...
 
+    @abstractmethod
     @progress.setter
-    def progress(self, value: int | None) -> None:
-        """Update the recorded progress for the entry."""
-        ...
+    def progress(self, value: int | None) -> None: ...
 
+    @abstractmethod
     @property
     def repeats(self) -> int | None:
-        """Get the repeat count for the entry.
-
-        If not available by the list provider, return 0.
-
-        Returns:
-            int: The number of times repeated.
-        """
+        """Repeat count for the entry."""
         ...
 
+    @abstractmethod
     @repeats.setter
-    def repeats(self, value: int | None) -> None:
-        """Update the repeat count for the entry."""
-        ...
+    def repeats(self, value: int | None) -> None: ...
 
+    @abstractmethod
     @property
     def review(self) -> str | None:
-        """Get the user's review for the entry.
-
-        Returns:
-            str | None: The user's review text, or None if not reviewed.
-        """
+        """User review text, if any."""
         ...
 
+    @abstractmethod
     @review.setter
-    def review(self, value: str | None) -> None:
-        """Update the review for the entry."""
-        ...
+    def review(self, value: str | None) -> None: ...
 
+    @abstractmethod
     @property
     def status(self) -> ListStatus | None:
-        """Get the status of the entry in the list.
-
-        Returns:
-            ListStatus | None: The watch status.
-        """
+        """Watch status for the entry."""
         ...
 
+    @abstractmethod
     @status.setter
     def status(self, value: ListStatus | None) -> None:
         """Update the status for the entry."""
         ...
 
+    @abstractmethod
     @property
     def user_rating(self) -> int | None:
-        """Get the user rating for the list entry.
-
-        Returns:
-            int | None: The user rating on a 0-100 scale, or None if not rated.
-        """
+        """User rating on a 0-100 scale."""
         ...
 
+    @abstractmethod
     @user_rating.setter
     def user_rating(self, value: int | None) -> None:
         """Update the user rating for the entry."""
         ...
 
+    @abstractmethod
     @property
     def started_at(self) -> datetime | None:
-        """Get the timestamp when the user started watching the entry.
-
-        Note: Timestamps must be timezone-aware.
-
-        Returns:
-            datetime | None: Timestamp when started, or None if not started.
-        """
+        """Timestamp when the user started the entry (timezone-aware)."""
         ...
 
+    @abstractmethod
     @started_at.setter
     def started_at(self, value: datetime | None) -> None:
-        """Update the timestamp when the user started the entry."""
+        """Update the started_at timestamp for the entry."""
         ...
 
+    @abstractmethod
     @property
     def finished_at(self) -> datetime | None:
-        """Get the timestamp when the user finished watching the entry.
-
-        This is the timestamp when the entry was completed for the *first* time.
-
-        Note: Timestamps must be timezone-aware.
-
-        Returns:
-            datetime | None: Timestamp when finished, or None if not finished.
-        """
+        """Timestamp when the user first completed the entry (timezone-aware)."""
         ...
 
+    @abstractmethod
     @finished_at.setter
     def finished_at(self, value: datetime | None) -> None:
-        """Update the timestamp when the user finished the entry."""
+        """Update the finished_at timestamp for the entry."""
         ...
 
-    @property
-    def total_units(self) -> int | None:
-        """Return the total number of units (episodes/chapters) for the media."""
-        ...
-
-    def media(self) -> ListMedia[ListProviderT]:
-        """Get the media item associated with the list entry.
-
-        Returns:
-            ListMedia: The media item.
-        """
+    @abstractmethod
+    def media(self) -> ListMedia[ProviderT]:
+        """Return the media item associated with this entry."""
         ...
 
 
-@runtime_checkable
-class ListProvider(Protocol):
-    """Interface for a provider that exposes a user media list."""
+class ListProvider(ABC):
+    """Abstract base provider that exposes a user media list."""
 
     NAMESPACE: ClassVar[str]
 
@@ -311,27 +302,30 @@ class ListProvider(Protocol):
             config (dict | None): Any configuration options that were detected with the
                 provider's namespace as a prefix.
         """
+        return None
 
     async def initialize(self) -> None:
         """Asynchronous initialization hook.
 
-        Put any async setup logic here (e.g., network requests).
+        Put any async logic that should be run after construction here.
         """
-        ...
+        return None
 
     async def backup_list(self) -> str:
         """Backup the entire list from the provider.
 
         It is up to the implementation to decide the format of the backup data. Whatever
-        format, it should be serializable/deserializable in string form.
+        format, it should be serializable/deserializable as a string.
 
-        This is optional and may not be supported by all providers.
+        Backup capabilities are optional. If a provider does not support backups, this
+        method should raise a NotImplementedError.
 
         Returns:
             str: A serialized string representation of all list entries.
         """
-        return ""
+        raise NotImplementedError(f"{self.NAMESPACE} does not support backup_list()")
 
+    @abstractmethod
     async def build_entry(self, key: str) -> ListEntry[Self]:
         """Construct a list entry for the supplied media key.
 
@@ -349,13 +343,19 @@ class ListProvider(Protocol):
         ...
 
     async def clear_cache(self) -> None:
-        """Clear any provider-local caches."""
-        ...
+        """Clear any cached data held by the provider.
+
+        For more efficient implementations, it is a good idea to cache data
+        fetched from the provider to minimize network requests. AniBridge uses
+        this method occasionally to clear such caches.
+        """
+        return None
 
     async def close(self) -> None:
         """Close the provider and release resources."""
-        ...
+        return None
 
+    @abstractmethod
     async def delete_entry(self, key: str) -> None:
         """Delete a list entry by its media key.
 
@@ -364,6 +364,7 @@ class ListProvider(Protocol):
         """
         ...
 
+    @abstractmethod
     async def get_entry(self, key: str) -> ListEntry[Self] | None:
         """Retrieve a list entry by its media key.
 
@@ -395,6 +396,7 @@ class ListProvider(Protocol):
             entries.append(entry)
         return entries
 
+    @abstractmethod
     def resolve_mappings(
         self,
         mapping: MappingGraph,
@@ -410,7 +412,7 @@ class ListProvider(Protocol):
         matching that scope.
 
         Args:
-            mapping (_MappingGraph): Available mapping edges and descriptors.
+            mapping (MappingGraph): Available mapping edges and descriptors.
             scope (str | None): Optional scope hint (e.g., "movie", "s1").
 
         Returns:
@@ -420,9 +422,10 @@ class ListProvider(Protocol):
         ...
 
     async def restore_list(self, backup: str) -> None:
-        """Restore the list from a serialized backup string.
+        """Restore list entries from a backup string.
 
-        This is optional and may not be supported by all providers.
+        The format of the backup string is determined by the implementation
+        of `backup_list`.
 
         Args:
             backup (str): The serialized string representation of the list entries.
@@ -438,8 +441,9 @@ class ListProvider(Protocol):
         Returns:
             Sequence[ListEntry]: A sequence of matching list entries.
         """
-        ...
+        return []
 
+    @abstractmethod
     async def update_entry(
         self, key: str, entry: ListEntry[Self]
     ) -> ListEntry[Self] | None:
@@ -459,8 +463,6 @@ class ListProvider(Protocol):
     ) -> Sequence[ListEntry[Self] | None]:
         """Update multiple list entries in a single operation.
 
-        This is optional and may not be supported by all providers.
-
         Args:
             entries (Sequence[ListEntry]): The list entries to update.
 
@@ -474,6 +476,7 @@ class ListProvider(Protocol):
             updated_entries.append(updated_entry)
         return updated_entries
 
+    @abstractmethod
     def user(self) -> ListUser | None:
         """Return the associated user object, if any.
 
