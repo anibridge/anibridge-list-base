@@ -5,7 +5,6 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
-from functools import total_ordering
 from typing import ClassVar, Protocol, Self, TypeVar, cast
 
 __all__ = [
@@ -72,7 +71,6 @@ class ListMediaType(StrEnum):
     MOVIE = "MOVIE"
 
 
-@total_ordering
 class ListStatus(StrEnum):
     """Supported statuses for media items in a list."""
 
@@ -114,6 +112,18 @@ class ListStatus(StrEnum):
         if not isinstance(other, ListStatus):
             return NotImplemented
         return self.priority <= other.priority
+
+    def __gt__(self, other: object) -> bool:
+        """Check if this ListStatus has higher priority than another."""
+        if not isinstance(other, ListStatus):
+            return NotImplemented
+        return self.priority > other.priority
+
+    def __ge__(self, other: object) -> bool:
+        """Check if this ListStatus has higher or equal priority than another."""
+        if not isinstance(other, ListStatus):
+            return NotImplemented
+        return self.priority >= other.priority
 
 
 @dataclass(frozen=True, slots=True)
