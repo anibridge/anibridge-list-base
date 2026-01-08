@@ -185,8 +185,8 @@ class ListMedia[ProviderT: ListProvider](ListEntity[ProviderT], ABC):
         """Display labels such as season or release year."""
         return ()
 
-    @abstractmethod
     @property
+    @abstractmethod
     def media_type(self) -> ListMediaType:
         """Type of media (e.g., TV, MOVIE)."""
         ...
@@ -196,8 +196,8 @@ class ListMedia[ProviderT: ListProvider](ListEntity[ProviderT], ABC):
         """Poster or cover image URL, if provided by the provider."""
         return None
 
-    @abstractmethod
     @property
+    @abstractmethod
     def total_units(self) -> int | None:
         """Total number of units (episodes/chapters) for the media."""
         ...
@@ -206,80 +206,80 @@ class ListMedia[ProviderT: ListProvider](ListEntity[ProviderT], ABC):
 class ListEntry[ProviderT: ListProvider](ListEntity[ProviderT], ABC):
     """Base class for list entries for a given media item."""
 
-    @abstractmethod
     @property
+    @abstractmethod
     def progress(self) -> int | None:
         """Progress integer (e.g., episodes watched)."""
         ...
 
-    @abstractmethod
     @progress.setter
+    @abstractmethod
     def progress(self, value: int | None) -> None: ...
 
-    @abstractmethod
     @property
+    @abstractmethod
     def repeats(self) -> int | None:
         """Repeat count for the entry."""
         ...
 
-    @abstractmethod
     @repeats.setter
+    @abstractmethod
     def repeats(self, value: int | None) -> None: ...
 
-    @abstractmethod
     @property
+    @abstractmethod
     def review(self) -> str | None:
         """User review text, if any."""
         ...
 
-    @abstractmethod
     @review.setter
+    @abstractmethod
     def review(self, value: str | None) -> None: ...
 
-    @abstractmethod
     @property
+    @abstractmethod
     def status(self) -> ListStatus | None:
         """Watch status for the entry."""
         ...
 
-    @abstractmethod
     @status.setter
+    @abstractmethod
     def status(self, value: ListStatus | None) -> None:
         """Update the status for the entry."""
         ...
 
-    @abstractmethod
     @property
+    @abstractmethod
     def user_rating(self) -> int | None:
         """User rating on a 0-100 scale."""
         ...
 
-    @abstractmethod
     @user_rating.setter
+    @abstractmethod
     def user_rating(self, value: int | None) -> None:
         """Update the user rating for the entry."""
         ...
 
-    @abstractmethod
     @property
+    @abstractmethod
     def started_at(self) -> datetime | None:
         """Timestamp when the user started the entry (timezone-aware)."""
         ...
 
-    @abstractmethod
     @started_at.setter
+    @abstractmethod
     def started_at(self, value: datetime | None) -> None:
         """Update the started_at timestamp for the entry."""
         ...
 
-    @abstractmethod
     @property
+    @abstractmethod
     def finished_at(self) -> datetime | None:
         """Timestamp when the user first completed the entry (timezone-aware)."""
         ...
 
-    @abstractmethod
     @finished_at.setter
+    @abstractmethod
     def finished_at(self, value: datetime | None) -> None:
         """Update the finished_at timestamp for the entry."""
         ...
