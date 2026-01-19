@@ -19,26 +19,12 @@ __all__ = [
     "MappingDescriptor",
     "MappingEdge",
     "MappingGraph",
+    "MappingResolution",
 ]
 
 
 ListProviderT = TypeVar("ListProviderT", bound="ListProvider", covariant=True)
-
-
-class MappingDescriptor(Protocol):
-    """Protocol for a mapping descriptor used in resolving media keys."""
-
-    provider: str
-    entry_id: str
-    scope: str
-
-    def key(self) -> str:
-        """Get the unique key for this mapping descriptor.
-
-        Returns:
-            str: The unique key.
-        """
-        ...
+MappingDescriptor = tuple[str, str, str | None]
 
 
 class MappingEdge(Protocol):
@@ -62,6 +48,14 @@ class MappingGraph(Protocol):
             Sequence[MappingDescriptor]: The unique mapping descriptors.
         """
         ...
+
+
+@dataclass(frozen=True, slots=True)
+class MappingResolution:
+    """Resolved mapping descriptor paired with its originating edge."""
+
+    descriptor: MappingDescriptor
+    edge: MappingEdge
 
 
 class ListMediaType(StrEnum):
@@ -409,25 +403,18 @@ class ListProvider(ABC):
     @abstractmethod
     def resolve_mappings(
         self,
-        mapping: MappingGraph,
-        *,
-        scope: str | None = None,
-    ) -> MappingDescriptor | None:
-        """Select a list media key from the supplied mapping graph.
+        edges: Sequence[MappingEdge],
+    ) -> Sequence[MappingResolution]:
+        """Resolve list media descriptors from mapping edges.
 
-        Implementations must choose some mapping descriptor from the graph that
-        they can resolve to a media key.
-
-        If a scope is provided, implementations should prefer descriptors
-        matching that scope.
+        Implementations must choose any mapping descriptors from the edges that they can
+        resolve to media keys, returning a resolution for each matched edge.
 
         Args:
-            mapping (MappingGraph): Available mapping edges and descriptors.
-            scope (str | None): Optional scope hint (e.g., "movie", "s1").
+            edges (Sequence[MappingEdge]): Mapping edges to resolve.
 
         Returns:
-            MappingDescriptor | None: The resolved mapping descriptor, or None if
-                no suitable descriptor could be found.
+            Sequence[MappingResolution]: Resolved descriptors with their edges.
         """
         ...
 
