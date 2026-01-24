@@ -370,7 +370,10 @@ class ListProvider(ABC):
         """
         entries: list[ListEntry[Self] | None] = []
         for key in keys:
-            entry = await self.get_entry(key)
+            try:
+                entry = await self.get_entry(key)
+            except Exception:
+                entry = None
             entries.append(entry)
         return entries
 
@@ -425,7 +428,10 @@ class ListProvider(ABC):
         """
         updated_entries: list[ListEntry[Self] | None] = []
         for entry in entries:
-            updated_entry = await self.update_entry(entry.media().key, entry)
+            try:
+                updated_entry = await self.update_entry(entry.media().key, entry)
+            except Exception:
+                updated_entry = None
             updated_entries.append(updated_entry)
         return updated_entries
 
