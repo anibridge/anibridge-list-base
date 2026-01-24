@@ -5,7 +5,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
-from typing import ClassVar, Protocol, Self, TypeVar, cast
+from typing import ClassVar, Self, TypeVar, cast
 
 __all__ = [
     "ListEntity",
@@ -17,45 +17,11 @@ __all__ = [
     "ListStatus",
     "ListUser",
     "MappingDescriptor",
-    "MappingEdge",
-    "MappingGraph",
-    "MappingResolution",
 ]
 
 
 ListProviderT = TypeVar("ListProviderT", bound="ListProvider", covariant=True)
 MappingDescriptor = tuple[str, str, str | None]
-
-
-class MappingEdge(Protocol):
-    """Protocol for a mapping edge used in resolving media keys."""
-
-    source: MappingDescriptor
-    destination: MappingDescriptor
-    source_range: str
-    destination_range: str | None
-
-
-class MappingGraph(Protocol):
-    """Protocol for a mapping graph used in resolving media keys."""
-
-    edges: tuple[MappingEdge, ...]
-
-    def descriptors(self) -> tuple[MappingDescriptor, ...]:
-        """Get unique descriptors referenced by the edges.
-
-        Returns:
-            Sequence[MappingDescriptor]: The unique mapping descriptors.
-        """
-        ...
-
-
-@dataclass(frozen=True, slots=True)
-class MappingResolution:
-    """Resolved mapping descriptor paired with its originating edge."""
-
-    descriptor: MappingDescriptor
-    edge: MappingEdge
 
 
 class ListMediaType(StrEnum):
@@ -329,23 +295,6 @@ class ListProvider(ABC):
         """
         raise NotImplementedError(f"{self.NAMESPACE} does not support backup_list()")
 
-    @abstractmethod
-    async def build_entry(self, key: str) -> ListEntry[Self]:
-        """Construct a list entry for the supplied media key.
-
-        Implementations must return a list entry instance suitable for creating or
-        updating a record, even if the user does not currently have the media in
-        their list. This typically involves fetching provider metadata for the
-        media and wrapping it with the provider's `ListEntry` implementation.
-
-        Args:
-            key (str): The unique key of the media item to prepare an entry for.
-
-        Returns:
-            ListEntry: The prepared list entry instance.
-        """
-        ...
-
     async def clear_cache(self) -> None:
         """Clear any cached data held by the provider.
 
@@ -369,8 +318,33 @@ class ListProvider(ABC):
         ...
 
     @abstractmethod
+    async def derive_keys(self, descriptors: Sequence[MappingDescriptor]) -> set[str]:
+        """Derive mapping descriptors into a key the provider understands.
+
+        The goal of this method is to allow AniBridge to convert mapping data from other
+        services into keys that this provider can use to look up media items.
+
+        For example, given a descriptor ("xyz", "123", None) for some "xyz" namespace,
+        the provider should be able to convert that into its internal media key "123".
+        More complicated derivations may be necessary for less direct mappings.
+
+        The descriptors are not expected to map one-to-one to keys; many descriptors
+        will be unmappable, and some may map to one-to-many keys. The returned set
+        should contain only successfully derived keys.
+
+        Args:
+            descriptors (Sequence[MappingDescriptor]): The target mapping descriptors.
+
+        Returns:
+            set[str]: The derived media keys.
+        """
+        ...
+
+    @abstractmethod
     async def get_entry(self, key: str) -> ListEntry[Self] | None:
         """Retrieve a list entry by its media key.
+
+        Only return None if the media item does not exist on the provider.
 
         Args:
             key (str): The unique key of the media item to retrieve.
@@ -399,24 +373,6 @@ class ListProvider(ABC):
             entry = await self.get_entry(key)
             entries.append(entry)
         return entries
-
-    @abstractmethod
-    def resolve_mappings(
-        self,
-        edges: Sequence[MappingEdge],
-    ) -> Sequence[MappingResolution]:
-        """Resolve list media descriptors from mapping edges.
-
-        Implementations must choose any mapping descriptors from the edges that they can
-        resolve to media keys, returning a resolution for each matched edge.
-
-        Args:
-            edges (Sequence[MappingEdge]): Mapping edges to resolve.
-
-        Returns:
-            Sequence[MappingResolution]: Resolved descriptors with their edges.
-        """
-        ...
 
     async def restore_list(self, backup: str) -> None:
         """Restore list entries from a backup string.

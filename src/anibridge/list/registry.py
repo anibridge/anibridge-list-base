@@ -5,6 +5,12 @@ from typing import TypeVar, overload
 
 from anibridge.list.base import ListProvider
 
+__all__ = [
+    "ListProviderRegistry",
+    "list_provider",
+    "provider_registry",
+]
+
 LP = TypeVar("LP", bound=ListProvider)
 
 

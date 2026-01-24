@@ -10,8 +10,6 @@ from anibridge.list.base import (
     ListStatus,
     ListUser,
     MappingDescriptor,
-    MappingEdge,
-    MappingGraph,
 )
 from anibridge.list.registry import (
     ListProviderRegistry,
@@ -30,8 +28,6 @@ __all__ = [
     "ListStatus",
     "ListUser",
     "MappingDescriptor",
-    "MappingEdge",
-    "MappingGraph",
     "list_provider",
     "provider_registry",
 ]
