@@ -15,13 +15,14 @@ __all__ = [
     "ListProvider",
     "ListProviderT",
     "ListStatus",
+    "ListTarget",
     "ListUser",
     "MappingDescriptor",
 ]
 
 
 ListProviderT = TypeVar("ListProviderT", bound="ListProvider", covariant=True)
-MappingDescriptor = tuple[str, str, str | None]
+MappingDescriptor = tuple[str, str, str | None]  # (provider, entry_id, entry_scope)
 
 
 class ListMediaType(StrEnum):
@@ -92,6 +93,14 @@ class ListUser:
 
     key: str
     title: str = field(compare=False)
+
+
+@dataclass(frozen=True, slots=True)
+class ListTarget:
+    """Resolved mapping descriptor to a list media key."""
+
+    descriptor: MappingDescriptor
+    media_key: str
 
 
 @dataclass(slots=True, eq=False)
@@ -256,7 +265,14 @@ class ListEntry[ProviderT: ListProvider](ListEntity[ProviderT], ABC):
 
     @abstractmethod
     def media(self) -> ListMedia[ProviderT]:
-        """Return the media item associated with this entry."""
+        """Get the media item associated with this entry.
+
+        For an efficient implementation, this should return a cached media item if
+        possible, rather than fetching it anew each time.
+
+        Returns:
+            ListMedia: The media item associated with this entry.
+        """
         ...
 
 
@@ -264,6 +280,7 @@ class ListProvider(ABC):
     """Abstract base provider that exposes a user media list."""
 
     NAMESPACE: ClassVar[str]
+    MAPPING_PROVIDERS: ClassVar[frozenset[str]]
 
     def __init__(self, *, config: dict | None = None) -> None:
         """Initialize the provider with optional configuration.
@@ -318,25 +335,20 @@ class ListProvider(ABC):
         ...
 
     @abstractmethod
-    async def derive_keys(self, descriptors: Sequence[MappingDescriptor]) -> set[str]:
-        """Derive mapping descriptors into a key the provider understands.
+    async def resolve_mapping_descriptors(
+        self, descriptors: Sequence[MappingDescriptor]
+    ) -> Sequence[ListTarget]:
+        """Resolve mapping descriptors into list media keys.
 
-        The goal of this method is to allow AniBridge to convert mapping data from other
-        services into keys that this provider can use to look up media items.
-
-        For example, given a descriptor ("xyz", "123", None) for some "xyz" namespace,
-        the provider should be able to convert that into its internal media key "123".
-        More complicated derivations may be necessary for less direct mappings.
-
-        The descriptors are not expected to map one-to-one to keys; many descriptors
-        will be unmappable, and some may map to one-to-many keys. The returned set
-        should contain only successfully derived keys.
+        Implementations should return one ListTarget for each mapping descriptor that
+        can be resolved into a list media key. Multiple list keys may be returned for a
+        single descriptor.
 
         Args:
-            descriptors (Sequence[MappingDescriptor]): The target mapping descriptors.
+            descriptors (Sequence[MappingDescriptor]): Mapping descriptors to resolve.
 
         Returns:
-            set[str]: The derived media keys.
+            Sequence[ListTarget]: The resolved descriptor/key pairs.
         """
         ...
 

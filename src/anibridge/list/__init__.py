@@ -1,4 +1,4 @@
-"""Anibridge list provider base classes package."""
+"""AniBridge list provider base classes package."""
 
 from anibridge.list.base import (
     ListEntity,
@@ -8,6 +8,7 @@ from anibridge.list.base import (
     ListProvider,
     ListProviderT,
     ListStatus,
+    ListTarget,
     ListUser,
     MappingDescriptor,
 )
@@ -26,6 +27,7 @@ __all__ = [
     "ListProviderRegistry",
     "ListProviderT",
     "ListStatus",
+    "ListTarget",
     "ListUser",
     "MappingDescriptor",
     "list_provider",
