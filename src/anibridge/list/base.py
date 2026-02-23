@@ -5,6 +5,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
+from logging import Logger
 from typing import ClassVar, Self, TypeVar, cast
 
 __all__ = [
@@ -18,11 +19,13 @@ __all__ = [
     "ListTarget",
     "ListUser",
     "MappingDescriptor",
+    "ProviderLogger",
 ]
 
 
 ListProviderT = TypeVar("ListProviderT", bound="ListProvider", covariant=True)
-MappingDescriptor = tuple[str, str, str | None]  # (provider, entry_id, entry_scope)
+type MappingDescriptor = tuple[str, str, str | None]
+type ProviderLogger = Logger
 
 
 class ListMediaType(StrEnum):
@@ -282,14 +285,16 @@ class ListProvider(ABC):
     NAMESPACE: ClassVar[str]
     MAPPING_PROVIDERS: ClassVar[frozenset[str]]
 
-    def __init__(self, *, config: dict | None = None) -> None:
+    def __init__(self, *, logger: ProviderLogger, config: dict | None = None) -> None:
         """Initialize the provider with optional configuration.
 
         Args:
+            logger (ProviderLogger): Application logger injected by AniBridge.
             config (dict | None): Any configuration options that were detected with the
                 provider's namespace as a prefix.
         """
-        return None
+        self.log: Logger = logger.getChild(f"list.{self.NAMESPACE}")
+        self.config: dict = config or {}
 
     async def initialize(self) -> None:
         """Asynchronous initialization hook.
@@ -385,6 +390,7 @@ class ListProvider(ABC):
             try:
                 entry = await self.get_entry(key)
             except Exception:
+                self.log.exception("Error fetching entry for key '%s'", key)
                 entry = None
             entries.append(entry)
         return entries
@@ -443,6 +449,9 @@ class ListProvider(ABC):
             try:
                 updated_entry = await self.update_entry(entry.media().key, entry)
             except Exception:
+                self.log.exception(
+                    "Error updating entry for key '%s'", entry.media().key
+                )
                 updated_entry = None
             updated_entries.append(updated_entry)
         return updated_entries

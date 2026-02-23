@@ -11,6 +11,7 @@ from anibridge.list.base import (
     ListTarget,
     ListUser,
     MappingDescriptor,
+    ProviderLogger,
 )
 from anibridge.list.registry import (
     ListProviderRegistry,
@@ -30,6 +31,7 @@ __all__ = [
     "ListTarget",
     "ListUser",
     "MappingDescriptor",
+    "ProviderLogger",
     "list_provider",
     "provider_registry",
 ]

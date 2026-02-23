@@ -1,6 +1,7 @@
 """Registration utilities for `ListProvider` implementations."""
 
 from collections.abc import Callable, Iterator
+from logging import Logger
 from typing import TypeVar, overload
 
 from anibridge.list.base import ListProvider
@@ -25,11 +26,18 @@ class ListProviderRegistry:
         """Remove all provider registrations."""
         self._providers.clear()
 
-    def create(self, namespace: str, *, config: dict | None = None) -> ListProvider:
+    def create(
+        self,
+        namespace: str,
+        *,
+        logger: Logger,
+        config: dict | None = None,
+    ) -> ListProvider:
         """Instantiate the provider registered under `namespace`.
 
         Args:
             namespace (str): The namespace identifier to create.
+            logger (Logger): Application logger injected into the provider.
             config (dict | None): Optional configuration dictionary to pass to the
                 provider constructor.
 
@@ -37,7 +45,7 @@ class ListProviderRegistry:
             ListProvider: An instance of the registered provider.
         """
         provider_cls = self.get(namespace)
-        return provider_cls(config=config)
+        return provider_cls(logger=logger, config=config)
 
     def get(self, namespace: str) -> type[ListProvider]:
         """Return the provider class registered under `namespace`.
