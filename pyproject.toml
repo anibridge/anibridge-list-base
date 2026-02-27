@@ -19,7 +19,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-dependencies = []
+dependencies = ["anibridge-utils>=0.1.0"]
 
 [tool.ruff]
 indent-width = 4
@@ -45,4 +45,4 @@ requires = ["uv_build>=0.9.21,<0.10.0"]
 build-backend = "uv_build"
 
 [dependency-groups]
-dev = ["ruff>=0.14.4", "ty>=0.0.8"]
+dev = ["ruff>=0.15.4", "ty>=0.0.19"]

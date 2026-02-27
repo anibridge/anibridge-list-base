@@ -8,6 +8,8 @@ from enum import StrEnum
 from logging import Logger
 from typing import ClassVar, Self, TypeVar, cast
 
+from anibridge.utils import MappingDescriptor, ProviderLogger
+
 __all__ = [
     "ListEntity",
     "ListEntry",
@@ -18,14 +20,10 @@ __all__ = [
     "ListStatus",
     "ListTarget",
     "ListUser",
-    "MappingDescriptor",
-    "ProviderLogger",
 ]
 
 
 ListProviderT = TypeVar("ListProviderT", bound="ListProvider", covariant=True)
-type MappingDescriptor = tuple[str, str, str | None]
-type ProviderLogger = Logger
 
 
 class ListMediaType(StrEnum):
