@@ -1,10 +1,10 @@
 """Tests for the list provider base classes."""
-from typing import cast
 
 import asyncio
 import logging
 from collections.abc import Sequence
 from datetime import UTC, datetime
+from typing import cast
 
 import pytest
 from anibridge.utils.types import MappingDescriptor, ProviderLogger
