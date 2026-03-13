@@ -1,4 +1,5 @@
 """Tests for the list provider base classes."""
+from typing import cast
 
 import asyncio
 import logging
@@ -6,7 +7,7 @@ from collections.abc import Sequence
 from datetime import UTC, datetime
 
 import pytest
-from anibridge.utils.types import MappingDescriptor
+from anibridge.utils.types import MappingDescriptor, ProviderLogger
 
 from anibridge.list import (
     ListEntry,
@@ -139,7 +140,7 @@ class DummyListProvider(ListProvider):
 
     def __init__(self) -> None:
         """Initialize the provider with a test logger."""
-        super().__init__(logger=logging.getLogger("tests.list"))
+        super().__init__(logger=cast(ProviderLogger, logging.getLogger("tests.list")))
 
     async def delete_entry(self, key: str) -> None:
         """Delete a list entry."""
@@ -162,9 +163,7 @@ class DummyListProvider(ListProvider):
             return None
         return DummyListEntry(self, key)
 
-    async def update_entry(
-        self, key: str, entry: ListEntry
-    ) -> ListEntry | None:
+    async def update_entry(self, key: str, entry: ListEntry) -> ListEntry | None:
         """Return the updated entry."""
         if key == "boom":
             raise RuntimeError("boom")
