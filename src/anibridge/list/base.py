@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import StrEnum
+from enum import Enum, StrEnum
 from typing import ClassVar, Self, TypeVar, cast
 
 from anibridge.utils.types import MappingDescriptor, ProviderLogger
@@ -32,7 +32,17 @@ class ListMediaType(StrEnum):
     MOVIE = "MOVIE"
 
 
-class ListStatus(StrEnum):
+_LIST_STATUS_PRIORITY: dict[str, int] = {
+    "completed": 3,
+    "repeating": 3,
+    "current": 2,
+    "paused": 2,
+    "dropped": 2,
+    "planning": 1,
+}
+
+
+class ListStatus(Enum):
     """Supported statuses for media items in a list."""
 
     COMPLETED = "completed"
@@ -42,49 +52,54 @@ class ListStatus(StrEnum):
     PLANNING = "planning"
     REPEATING = "repeating"
 
-    __PRIORITY: ClassVar[dict[str, int]] = {
-        "completed": 3,
-        "repeating": 3,
-        "current": 2,
-        "paused": 2,
-        "dropped": 2,
-        "planning": 1,
-    }
-
     @property
     def priority(self) -> int:
-        """Get the priority of the ListStatus for comparison purposes."""
-        return self.__PRIORITY[self.value]
+        """Return the priority level of this status."""
+        return _LIST_STATUS_PRIORITY[self.value]
 
     def __eq__(self, other: object) -> bool:
-        """Check equality with another ListStatus (not based on priority)."""
-        if not isinstance(other, ListStatus):
-            return NotImplemented
-        return self.value == other.value
+        """Check equality (not based on priority)."""
+        if isinstance(other, ListStatus):
+            return self.value == other.value
+        if isinstance(other, str) and other in _LIST_STATUS_PRIORITY:
+            return self.value == other
+        return NotImplemented
+
+    def __hash__(self) -> int:
+        """Hash based on the string value of the status."""
+        return hash(self.value)
 
     def __lt__(self, other: object) -> bool:
-        """Check if this ListStatus has lower priority than another."""
-        if not isinstance(other, ListStatus):
-            return NotImplemented
-        return self.priority < other.priority
+        """Compare this status to another based on priority."""
+        if isinstance(other, ListStatus):
+            return self.priority < other.priority
+        if isinstance(other, str) and other in _LIST_STATUS_PRIORITY:
+            return self.priority < _LIST_STATUS_PRIORITY[other]
+        return NotImplemented
 
     def __le__(self, other: object) -> bool:
-        """Check if this ListStatus has lower or equal priority than another."""
-        if not isinstance(other, ListStatus):
-            return NotImplemented
-        return self.priority <= other.priority
+        """Compare this status to another based on priority."""
+        if isinstance(other, ListStatus):
+            return self.priority <= other.priority
+        if isinstance(other, str) and other in _LIST_STATUS_PRIORITY:
+            return self.priority <= _LIST_STATUS_PRIORITY[other]
+        return NotImplemented
 
     def __gt__(self, other: object) -> bool:
-        """Check if this ListStatus has higher priority than another."""
-        if not isinstance(other, ListStatus):
-            return NotImplemented
-        return self.priority > other.priority
+        """Compare this status to another based on priority."""
+        if isinstance(other, ListStatus):
+            return self.priority > other.priority
+        if isinstance(other, str) and other in _LIST_STATUS_PRIORITY:
+            return self.priority > _LIST_STATUS_PRIORITY[other]
+        return NotImplemented
 
     def __ge__(self, other: object) -> bool:
-        """Check if this ListStatus has higher or equal priority than another."""
-        if not isinstance(other, ListStatus):
-            return NotImplemented
-        return self.priority >= other.priority
+        """Compare this status to another based on priority."""
+        if isinstance(other, ListStatus):
+            return self.priority >= other.priority
+        if isinstance(other, str) and other in _LIST_STATUS_PRIORITY:
+            return self.priority >= _LIST_STATUS_PRIORITY[other]
+        return NotImplemented
 
 
 @dataclass(frozen=True, slots=True)
