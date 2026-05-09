@@ -305,7 +305,7 @@ class ListProvider(ABC):
             config (dict | None): Any configuration options that were detected with the
                 provider's namespace as a prefix.
         """
-        self.log = logger.getChild(f"list.{self.NAMESPACE}")
+        self.log = logger
         self.config: dict = config or {}
 
     async def initialize(self) -> None:
